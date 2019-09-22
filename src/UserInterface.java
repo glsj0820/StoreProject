@@ -1,9 +1,9 @@
 /*프로그램 이름:편의점 프로그램
 프로그램 설명:편의점 포스기처럼 상품을 관리하고, 손님을 받아 구매를 처리하는 프로그램
-작성일: 2019/6/23
+작성일: 2019/9/22
 작성자: 이선주*/
 
-import java.util.Scanner;
+import java.util.*;
 import java.io.*;
 
 public class UserInterface {
@@ -14,30 +14,11 @@ public class UserInterface {
 		String name; //입력받을 상품이름
 		int price = 0; //입력받을 상품 가격
 		int amount = 0; //입력받을 입고수량
-		int goodsLimit = 0; //입력받을 최대 물품 수량
 		int menu = 0; //입력받을 메뉴 번호
 		int submenu1 = 0; //입력받을 서브메뉴 번호
 		int submenu2 = 0; //입력받을 서브메뉴 번호
 
-		if(goodsLimit == 0) {
-			while(true) {
-				System.out.println("******* 영업 시작 전 *******");
-				System.out.println("최대 물품 수량을 입력하시오.");
-				try {
-					goodsLimit = scan.nextInt(); //최대 물품 수량을 입력
-				}
-				catch(java.util.InputMismatchException e) { //숫자를 입력하지 않았을 때 익셉션 발생
-					System.out.println("숫자를 입력해주세요.");
-					scan.nextLine();
-					continue;
-				}	
-				if(goodsLimit <= 0) //숫자가 1이상의 수가 아닐 때
-					System.out.println("1이상의 수를 입력해주세요.");
-				else
-					break;
-			}
-		}
-		Management manager = new Management(goodsLimit); //manager객체 선언 및 생성
+		Management manager = new Management();
 		
 		while(true) {
 			//메뉴
@@ -62,7 +43,7 @@ public class UserInterface {
 					}
 					switch(submenu1) {
 					case 1: //(1) 상품 구매
-						if(manager.getCount() <= 0) //상품이 하나도 등록되지 않았을 때 
+						if(manager.goodsList.size() <= 0) //상품이 하나도 등록되지 않았을 때 
 							System.out.println("현재 구매할 상품이 존재하지 않습니다.");
 						else {
 							//카테고리 검색
@@ -73,11 +54,11 @@ public class UserInterface {
 							//입력받은 카테고리에 해당되는 물품 출력
 							System.out.println("\t상품이름\t상품가격\t수량");
 							try {
-								for(int i=0; manager.findGoods(category)[i] != null; i++) {
-									System.out.print(i+1+")\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsName()+"\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsPrice()+"\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsAmount()+"\n");
+								for(Goods gds : manager.findGoods(category)) {
+									System.out.print(manager.findGoods(category).indexOf(gds)+1+")\t");
+									System.out.print(gds.getGoodsName()+"\t");
+									System.out.print(gds.getGoodsPrice()+"\t");
+									System.out.print(gds.getGoodsAmount()+"\n");
 								}
 							}
 							catch(Exception e) { //입력한 카테고리에 속한 물품이 없으면 익셉션 발생
@@ -99,7 +80,7 @@ public class UserInterface {
 							String customerGoodsName;
 							int customerGoodsIndex;
 							try {
-								customerGoodsName = manager.findGoods(category)[num-1].getGoodsName(); //구매할 상품 번호에 해당하는 이름을 customerGoodsName에 저장
+								customerGoodsName = manager.findGoods(category).get(num-1).getGoodsName(); //구매할 상품 번호에 해당하는 이름을 customerGoodsName에 저장
 								customerGoodsIndex = manager.findGoodsIndex(customerGoodsName); //구매할 물품이 Goods객체 배열에서의 index를 저장
 							}
 							catch(Exception e) { //입력한 상품이 존재하지 않으면 익셉션 발생
@@ -109,6 +90,10 @@ public class UserInterface {
 							System.out.print(customerGoodsName+"의 구매 수량 : ");
 							try {
 								amount = scan.nextInt();
+								if(amount <= 0) {
+									System.out.println("구매수량을 정확하게 입력해주세요.");
+									break;
+								}
 							}
 							catch(java.util.InputMismatchException e) { //nextInt()함수에서 숫자를 입력하지 않았을 때 익셉션 발생
 								System.out.println("숫자를 입력해주세요.");
@@ -125,7 +110,7 @@ public class UserInterface {
 								}
 								catch(Exception e) {
 									System.out.println("결제 실패하였습니다.");
-									System.out.println("재고 부족. 현재 "+customerGoodsName+"의 재고는 "+manager.goodsList[customerGoodsIndex].getGoodsAmount()+"입니다.");
+									System.out.println("재고 부족. 현재 "+customerGoodsName+"의 재고는 "+manager.goodsList.get(customerGoodsIndex).getGoodsAmount()+"입니다.");
 									break;
 								}
 								System.out.println("결제가 완료되었습니다."); //결제 성공 시 문구 출력
@@ -137,13 +122,13 @@ public class UserInterface {
 					case 2: //(2) 상품 리스트 출력
 						System.out.println("******* 상품 리스트 출력 *******");
 						System.out.println("상품번호\t대분류\t상품이름\t상품가격\t수량");
-						for(int i=0; i<manager.getCount(); i++) {
-							System.out.print(manager.goodsList[i].getGoodsNo()+"\t");
-							System.out.print(manager.goodsList[i].getCategoryName()+'\t');
-							System.out.print(manager.goodsList[i].getGoodsName()+'\t');
-							System.out.print(manager.goodsList[i].getGoodsPrice());
+						for(Goods gds : manager.goodsList) {
+							System.out.print(gds.getGoodsNo()+"\t");
+							System.out.print(gds.getCategoryName()+'\t');
+							System.out.print(gds.getGoodsName()+'\t');
+							System.out.print(gds.getGoodsPrice());
 							System.out.print('\t');
-							System.out.print(manager.goodsList[i].getGoodsAmount());
+							System.out.print(gds.getGoodsAmount());
 							System.out.print("\n");
 						}
 						break;
@@ -187,13 +172,10 @@ public class UserInterface {
 							scan.nextLine();
 							break;
 						}
-						catch (java.lang.ArrayIndexOutOfBoundsException e){ //Goods 객체 배열의 범위 초과하여 익셉션 발생 시 물품 수량 초과 문구 출력
-							System.out.println("물품 수량 초과");
-						}
 						break;
 					case 2: //(2) 상품 삭제
 						System.out.println("******* 상품 삭제 *******");
-						if(manager.getCount() <= 0) //상품이 하나도 등록되지 않았을 때 
+						if(manager.goodsList.size() <= 0) //상품이 하나도 등록되지 않았을 때 
 							System.out.println("현재 삭제할 상품이 존재하지 않습니다.");
 						else {
 							System.out.println("------- 카테고리 검색하기 -------");
@@ -202,11 +184,11 @@ public class UserInterface {
 							//입력받은 카테고리에 해당되는 물품 출력
 							try {
 								System.out.println("\t상품이름\t상품가격\t수량");
-								for(int i=0; manager.findGoods(category)[i] != null; i++) {
-									System.out.print(i+1+")\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsName()+"\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsPrice()+"\t");
-									System.out.print(manager.findGoods(category)[i].getGoodsAmount()+"\n");
+								for(Goods gds : manager.findGoods(category)) {
+									System.out.print(manager.findGoods(category).indexOf(gds)+1+")\t");
+									System.out.print(gds.getGoodsName()+"\t");
+									System.out.print(gds.getGoodsPrice()+"\t");
+									System.out.print(gds.getGoodsAmount()+"\n");
 								}
 							}
 							catch(Exception e) { //입력한 카테고리에 속한 물품이 없으면 익셉션 발생
@@ -226,8 +208,8 @@ public class UserInterface {
 							}
 							String goodsName;
 							try {
-								goodsName = manager.findGoods(category)[num-1].getGoodsName(); //삭제할 상품 번호에 해당하는 이름을 customerGoodsName에 저장
-								manager.deleteGoods(manager.findGoodsIndex(manager.findGoods(category)[num-1].getGoodsName())); //상품 삭제
+								goodsName = manager.findGoods(category).get(num-1).getGoodsName(); //삭제할 상품 번호에 해당하는 이름을 customerGoodsName에 저장
+								manager.deleteGoods(manager.findGoodsIndex(goodsName)); //상품 삭제
 								System.out.println(goodsName+" 상품을 삭제하였습니다."); //상품 삭제 성공 시 문구 출력
 							}
 							catch(Exception e) { //입력한 상품이 존재하지 않으면 익셉션 발생
@@ -239,13 +221,13 @@ public class UserInterface {
 					case 3: //(3) 상품리스트 출력
 						System.out.println("******* 상품 리스트 출력 *******");
 						System.out.println("상품번호\t대분류\t상품이름\t상품가격\t수량");
-						for(int i=0; i<manager.getCount(); i++) {
-							System.out.print(manager.goodsList[i].getGoodsNo()+"\t");
-							System.out.print(manager.goodsList[i].getCategoryName()+'\t');
-							System.out.print(manager.goodsList[i].getGoodsName()+'\t');
-							System.out.print(manager.goodsList[i].getGoodsPrice());
+						for(Goods gds : manager.goodsList) {
+							System.out.print(gds.getGoodsNo()+"\t");
+							System.out.print(gds.getCategoryName()+'\t');
+							System.out.print(gds.getGoodsName()+'\t');
+							System.out.print(gds.getGoodsPrice());
 							System.out.print('\t');
-							System.out.print(manager.goodsList[i].getGoodsAmount());
+							System.out.print(gds.getGoodsAmount());
 							System.out.print("\n");
 						}
 						break;
@@ -274,16 +256,12 @@ public class UserInterface {
 							}
 						}
 						break;
-					case 6:
+					case 6: //(6) 불러오기
 						DataInputStream dataReadFile = null;
 						try {
 							dataReadFile = new DataInputStream(new FileInputStream("ManagementFile.txt")); // 불러올 파일 객체 오픈
 							manager.openManagement(dataReadFile); //불러오기
 							
-						}
-						catch (java.lang.ArrayIndexOutOfBoundsException e){ //Goods 객체 배열의 범위 초과하여 익셉션 발생 시 물품 수량 초과 문구 출력
-							System.out.println("물품 수량 초과. 수용 가능한 물품만 불러옵니다.");
-							break;
 						}
 						catch(FileNotFoundException fnfe) {
 						}
